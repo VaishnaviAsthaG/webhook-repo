@@ -24,10 +24,20 @@ app.get("/", (req, res) => {
 // Webhook route
 app.post("/webhook", async (req, res) => {
   const eventType = req.headers["x-github-event"];
-  const eventId = req.headers["x-github-delivery"]; // unique id
+  const eventId = req.headers["x-github-delivery"]; // unique ID
   const payload = req.body;
 
   try {
+    // Step 1: check karo ye event already DB me hai ya nahi
+    const existingEvent = await WebhookEvent.findOne({ eventId });
+
+    if (existingEvent) {
+      return res.status(200).json({
+        message: "Duplicate event ignored"
+      });
+    }
+
+    // Step 2: agar new hai tabhi save karo
     const newEvent = new WebhookEvent({
       eventType,
       repoName: payload.repository?.name || "Unknown",
@@ -42,11 +52,12 @@ app.post("/webhook", async (req, res) => {
     res.status(200).json({
       message: "Webhook saved successfully"
     });
+
   } catch (error) {
-    res.status(500).json({ error: "Failed to save webhook" });
+    console.error(error);
+    res.status(500).json({ error: "Failed to process webhook" });
   }
 });
-
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
