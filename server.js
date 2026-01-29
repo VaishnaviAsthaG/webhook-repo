@@ -15,6 +15,7 @@ const PORT = 5000;
 
 app.use(cors());
 app.use(bodyParser.json());
+app.use(express.static("public"));
 
 // Test route
 app.get("/", (req, res) => {
@@ -58,6 +59,23 @@ app.post("/webhook", async (req, res) => {
     res.status(500).json({ error: "Failed to process webhook" });
   }
 });
+
+// Get latest webhook events (last 5 minutes)
+app.get("/events", async (req, res) => {
+  try {
+    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+
+    const events = await WebhookEvent.find({
+      timestamp: { $gte: fiveMinutesAgo }
+    }).sort({ timestamp: -1 });
+
+    res.status(200).json(events);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Failed to fetch events" });
+  }
+});
+
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);

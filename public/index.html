@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>GitHub Webhook Dashboard</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f4f4;
+      padding: 20px;
+    }
+    h2 {
+      text-align: center;
+    }
+    .event {
+      background: white;
+      padding: 12px;
+      margin: 10px 0;
+      border-radius: 5px;
+      box-shadow: 0 0 5px rgba(0,0,0,0.1);
+    }
+    .event span {
+      display: block;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>GitHub Webhook Events (Last 5 Minutes)</h2>
+  <div id="events"></div>
+
+  <script>
+    async function fetchEvents() {
+      try {
+        const res = await fetch("http://localhost:5000/events");
+        const data = await res.json();
+
+        const container = document.getElementById("events");
+        container.innerHTML = "";
+
+        if (data.length === 0) {
+          container.innerHTML = "<p>No recent events</p>";
+          return;
+        }
+
+        data.forEach(event => {
+          const div = document.createElement("div");
+          div.className = "event";
+          div.innerHTML = `
+            <span><b>Event:</b> ${event.eventType}</span>
+            <span><b>Repo:</b> ${event.repoName}</span>
+            <span><b>Author:</b> ${event.author}</span>
+            <span><b>Action:</b> ${event.action}</span>
+            <span><b>Time:</b> ${new Date(event.timestamp).toLocaleString()}</span>
+          `;
+          container.appendChild(div);
+        });
+
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    // Har 5 second me refresh
+    fetchEvents();
+    setInterval(fetchEvents, 5000);
+  </script>
+
+</body>
+</html>
