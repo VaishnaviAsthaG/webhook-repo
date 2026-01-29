@@ -1,6 +1,14 @@
 const express = require("express");
 const bodyParser = require("body-parser");
 const cors = require("cors");
+const mongoose = require("mongoose");
+
+mongoose.connect("YOUR_MONGODB_CONNECTION_STRING", {
+  useNewUrlParser: true,
+  useUnifiedTopology: true
+})
+.then(() => console.log("MongoDB connected"))
+.catch(err => console.error(err));
 
 const app = express();
 const PORT = 5000;
