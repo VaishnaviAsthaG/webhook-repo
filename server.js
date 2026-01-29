@@ -1,14 +1,14 @@
+require("dotenv").config();
 const express = require("express");
 const bodyParser = require("body-parser");
 const cors = require("cors");
 const mongoose = require("mongoose");
+const WebhookEvent = require("./models/WebhookEvent");
 
-mongoose.connect("YOUR_MONGODB_CONNECTION_STRING", {
-  useNewUrlParser: true,
-  useUnifiedTopology: true
-})
-.then(() => console.log("MongoDB connected"))
-.catch(err => console.error(err));
+mongoose.connect(process.env.MONGO_URI)
+  .then(() => console.log("MongoDB connected successfully"))
+  .catch(err => console.error("MongoDB connection error:", err));
+
 
 const app = express();
 const PORT = 5000;
@@ -22,19 +22,31 @@ app.get("/", (req, res) => {
 });
 
 // Webhook route
-app.post("/webhook", (req, res) => {
+app.post("/webhook", async (req, res) => {
   const eventType = req.headers["x-github-event"];
+  const eventId = req.headers["x-github-delivery"]; // unique id
   const payload = req.body;
 
-  console.log("New Webhook Event Received:");
-  console.log("Event Type:", eventType);
-  console.log("Payload:", payload);
+  try {
+    const newEvent = new WebhookEvent({
+      eventType,
+      repoName: payload.repository?.name || "Unknown",
+      author: payload.sender?.login || "Unknown",
+      action: payload.action || "N/A",
+      timestamp: new Date(),
+      eventId
+    });
 
-  res.status(200).json({
-    message: "Webhook received successfully",
-    eventType: eventType
-  });
+    await newEvent.save();
+
+    res.status(200).json({
+      message: "Webhook saved successfully"
+    });
+  } catch (error) {
+    res.status(500).json({ error: "Failed to save webhook" });
+  }
 });
+
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
